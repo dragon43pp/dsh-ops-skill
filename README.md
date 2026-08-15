@@ -1,111 +1,81 @@
 # DSH Ops Skill
 
-[中文指南](docs/README.zh-CN.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
+[中文指南](docs/README.zh-CN.md) · [Architecture](docs/architecture.md) · [Demo](docs/demo.md) · [Compatibility](docs/compatibility.md) · [Roadmap](ROADMAP.md) · [Security](SECURITY.md)
 
-> **Stop DeepSeek Harness upgrades from booting as a blank instance.**
+> **The upgrade-safety and runtime-reliability kit for DeepSeek Harness.**
+>
+> Prove the state contract, diagnose blank-instance failures without exposing sensitive data, and plan the smallest reversible recovery before an upgrade becomes an incident.
 
-`dsh-ops-skill` is a portable operational Skill for agents and humans running [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness). It helps diagnose and safely remediate empty session sidebars, missing model routes, broken Bash/Bubblewrap execution, container upgrade drift, and rollback failures.
+DSH Ops Skill is an English-first, portable operational Skill for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) and other folder-based agent systems. It turns empty session sidebars, missing model routes, spawn bash ENOENT, unavailable sandbox backends, and container upgrade drift into a disciplined **evidence → plan → validation** workflow.
 
-It is deliberately **not** a privileged Docker wrapper. The repository ships an AI-readable `SKILL.md`, a dependency-light metadata-only doctor, safe deployment guidance, and a Compose state-contract overlay. Use it from Claude Code, Codex, OpenCode, DSH, or any agent system that can load a folder-based skill.
+It is intentionally **not** a privileged Docker wrapper, automatic state copier, or official DeepSeek plugin. The repository provides an AI-readable SKILL.md, a metadata-only doctor, recovery playbooks, a least-privilege Compose overlay, and public-safe documentation for Claude Code, Codex, OpenCode, DSH, or similar folder-based Skill systems.
 
-## Why This Exists
+## The operating principle
 
-A DSH container can return HTTP 200 while still behaving like a new installation. Profiles, model settings, credentials, session logs, and storage are loaded relative to the DSH state root. If a rebuild changes `HOME`, `DSH_HOME`, a state mount destination, the entrypoint, or the workdir, the UI can show empty sessions and missing model routes even though the original volume still exists.
+~~~mermaid
+flowchart LR
+    A[Capture redacted baseline] --> B[Verify candidate state contract]
+    B --> C[Plan the smallest reversible repair]
+    C --> D[Operator approval]
+    D --> E[Validate browser-visible recovery]
+~~~
 
-This skill turns that failure mode into a repeatable workflow:
+A DSH service can return HTTP 200 while behaving like a fresh installation. That does not prove state was lost: a new runtime may resolve a different root because HOME, DSH_HOME, a mount destination, the entrypoint, or the workdir changed. This project treats those values as a **state contract** that must be proven before the runtime is replaced or repaired.
 
-1. inspect metadata before changing anything;
-2. prove the state root and state artifacts are present;
-3. compare the old and candidate runtime contract;
-4. make the smallest reversible repair;
-5. verify the browser-visible recovery, model routes, and code sandbox.
+| It helps you establish | It deliberately never does |
+|---|---|
+| Whether the selected state root contains expected artifacts. | Read chats, prompts, session bodies, credentials, or settings values. |
+| Whether Bash and Bubblewrap are present in the actual runtime. | Enable privileged mode, Docker Socket access, or SYS_ADMIN by default. |
+| Whether a candidate launch contract differs from the baseline. | Copy session files into a guessed destination or overwrite state automatically. |
+| Whether a recovery should proceed, stop, or roll back. | Present an incident workaround as a generic security recommendation. |
 
-## Quick Start
+## 60-second quick start
 
-```sh
+~~~sh
 git clone https://github.com/dragon43pp/dsh-ops-skill.git
 cd dsh-ops-skill
 sh scripts/dsh-doctor.sh verify
-```
+~~~
 
-To test Bubblewrap with a no-write command:
+To emit a compact, non-secret state contract for a private before/after comparison:
 
-```sh
-DSH_DOCTOR_RUN_SANDBOX=1 sh scripts/dsh-doctor.sh verify
-```
-
-To emit a small, non-secret state contract for pre/post-upgrade comparison:
-
-```sh
+~~~sh
 sh scripts/dsh-doctor.sh contract
-```
+~~~
 
-The doctor does **not** read chat transcripts, settings values, credentials, Docker inspect output, or session contents.
+To run the optional **no-write** Bubblewrap smoke test, explicitly opt in:
 
-## Install as an Agent Skill
+~~~sh
+DSH_DOCTOR_RUN_SANDBOX=1 sh scripts/dsh-doctor.sh verify
+~~~
 
-Add this folder to your agent's skill directory or attach `SKILL.md` and its bundled `scripts/` and `references/` directories to the agent's task context. The primary entry point is:
+The doctor reports filesystem presence and executable availability only. It does **not** read session contents, settings values, credential values, model base URLs, Docker inspection output, or storage databases.
 
-```text
-SKILL.md
-```
+## Documentation and evidence
 
-Tell the agent:
-
-> Use the DSH Ops Skill to inspect this DeepSeek Harness deployment. Run the doctor in read-only mode first. Do not change containers, state volumes, or credentials until you present a redacted diagnosis and rollback plan.
-
-## What It Diagnoses
-
-| Symptom | What the Skill Checks First |
+| Document | Purpose |
 |---|---|
-| Empty sessions, fresh Settings, missing models | State root, `HOME`/`DSH_HOME`, `settings.yaml`, profiles, sessions, and storage. |
-| `spawn bash ENOENT` | Bash presence in the actual runtime image. |
-| `SANDBOX_UNAVAILABLE` | Bubblewrap availability plus an optional no-write namespace smoke test. |
-| Model 401, timeout, or truncation | State/profile loading order and non-secret route configuration metadata. |
-| Upgrade regression | Entrypoint, command, workdir, state/workspace mounts, and rollback contract. |
+| [Architecture](docs/architecture.md) | Defines the state contract, evidence loop, and default security posture. |
+| [Demonstration](docs/demo.md) | Shows a synthetic blank-instance incident from detection to validation. |
+| [Compatibility](docs/compatibility.md) | Separates verified scope, expected scope, and unverified deployment forms. |
+| [Remediation Playbooks](references/remediation-playbooks.md) | Maps symptoms to smallest reversible recovery paths. |
+| [State Contract](references/state-contract.md) | Lists upgrade invariants and public redaction rules. |
+| [Compose overlay](examples/compose.state-safe.yaml) | Makes state and workspace paths explicit without adding privileged defaults. |
+| [Roadmap](ROADMAP.md) | States planned work and explicit non-goals. |
 
-## Repository Layout
+## Use as an Agent Skill
 
-```text
-SKILL.md                              # Agent instructions and guardrails
-scripts/dsh-doctor.sh                 # Read-only verifier and contract summary
-references/remediation-playbooks.md   # Symptom-specific repair playbooks
-references/state-contract.md           # Upgrade invariants and redaction rules
-examples/compose.state-safe.yaml      # Compose overlay for explicit state persistence
-docs/README.zh-CN.md                  # Chinese guide
-```
+Add this folder to an agent skill directory, or attach SKILL.md with its scripts and references directories to the agent task context. Start with this instruction:
 
-## Safe Compose Pattern
+> Use the DSH Ops Skill to inspect this DeepSeek Harness deployment. Start in read-only mode. Do not change containers, state volumes, credentials, capabilities, or provider settings until you present a redacted diagnosis and rollback plan.
 
-Merge [`examples/compose.state-safe.yaml`](examples/compose.state-safe.yaml) into your existing Compose service. It makes the state root explicit and separates it from the workspace. It intentionally does **not** add Docker Socket, privileged mode, `SYS_ADMIN`, a public network bind, an image, or a startup command.
+## Security and compatibility
 
-```sh
-DSH_STATE_DIR=$PWD/.dsh-state DSH_WORKSPACE=$PWD \
-  docker compose -f compose.yaml -f examples/compose.state-safe.yaml config
-```
+DSH is in developer preview and can introduce compatibility-breaking changes. This project publishes evidence and boundaries rather than blanket compatibility claims; review the [Compatibility Matrix](docs/compatibility.md) before applying it outside a tested Linux container deployment.
 
-Review the rendered configuration before applying it. Preserve your existing entrypoint, command, user, port policy, and trusted-host settings.
+The Compose overlay makes state and workspace paths explicit while setting no-new-privileges and dropping Linux capabilities. It intentionally does **not** add an image, startup command, public port, Docker Socket mount, privileged mode, or SYS_ADMIN. The project is a community companion in the DSH ecosystem; it uses the dsh-plugin topic for discoverability but does not claim official endorsement or implement an official DSH plugin API.
 
-## Security Model
-
-This project is designed for **single-tenant, trusted operator environments**. DSH can invoke tools and execute code; do not expose an unauthenticated DSH Web UI to the public Internet.
-
-Never commit or share:
-
-- API keys, tokens, passwords, credential files, or model base URLs;
-- private IPs, internal DNS, container IDs, workspace names, or host paths;
-- session logs, prompts, screenshots with conversations, or Docker inspect dumps;
-- a Docker Socket mount or high-capability deployment as a default example.
-
-See [SECURITY.md](SECURITY.md) for reporting and disclosure rules.
-
-## Compatibility
-
-DSH is in developer preview and changes quickly. Pin a DSH version in each deployment, run the doctor before and after upgrades, and report compatibility results through issues. The skill targets the runtime contract rather than a single DSH release.
-
-## Contributing
-
-Issues and pull requests are welcome for generic, reproducible, fully redacted cases. Please use the issue template and never attach private deployment output. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Never commit API keys, tokens, passwords, private URLs, IP addresses, internal DNS names, private paths, container IDs, session logs, prompts, screenshots containing conversations, or raw Docker inspection data. See [SECURITY.md](SECURITY.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
