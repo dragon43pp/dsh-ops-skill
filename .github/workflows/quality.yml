@@ -1,0 +1,50 @@
+name: Public Quality Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  repository-baseline:
+    name: Shell and documentation baseline
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate POSIX shell syntax
+        run: |
+          sh -n scripts/dsh-doctor.sh
+          sh -n tests/test-dsh-doctor.sh
+
+      - name: Run isolated doctor regression suite
+        run: sh tests/test-dsh-doctor.sh
+
+      - name: Verify required public assets
+        run: |
+          test -f SKILL.md
+          test -f README.md
+          test -f docs/README.zh-CN.md
+          test -f docs/architecture.md
+          test -f docs/demo.md
+          test -f docs/compatibility.md
+          test -f references/state-contract.md
+          test -f references/remediation-playbooks.md
+          test -f examples/compose.state-safe.yaml
+          test -f ROADMAP.md
+          test -f CHANGELOG.md
+          test -f tests/test-dsh-doctor.sh
+
+      - name: Reject public account placeholders
+        run: |
+          placeholder=$(printf '%s%s' '<YOUR_' 'GITHUB_HANDLE>')
+          if grep -R --line-number --fixed-strings "$placeholder" \
+            --exclude-dir=.git .; then
+            echo 'Replace public GitHub account placeholders before merging.' >&2
+            exit 1
+          fi
