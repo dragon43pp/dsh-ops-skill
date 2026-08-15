@@ -9,7 +9,7 @@ description: Diagnose and safely remediate DeepSeek Harness (DSH) deployment, se
 
 Diagnose DSH runtime failures without exposing credentials, private model endpoints, conversation content, or internal host details. Prefer read-only evidence first. Treat a repair as a separate, explicitly approved step.
 
-Run `scripts/dsh-doctor.sh` before proposing a deployment change. Read `references/remediation-playbooks.md` only for the matching symptom.
+Run `scripts/dsh-doctor.sh` before proposing a deployment change. For an upgrade or container replacement, create an operator-controlled `snapshot` before and after the isolated candidate, then run `diff`; treat exit code `2` as a mandatory human-review signal. Read `references/remediation-playbooks.md` only for the matching symptom.
 
 ## Guardrails
 
@@ -53,7 +53,19 @@ When inspecting a Docker deployment, collect a **redacted contract manifest**. C
 
 Use `docker inspect` only under a redaction procedure. Never paste the full inspect output into an issue, public log, or prompt.
 
-### 3. Make the smallest reversible repair
+### 3. Capture a comparable upgrade contract
+
+Create a redacted contract snapshot before touching the runtime, then a second snapshot only after an isolated candidate has started:
+
+```sh
+sh scripts/dsh-doctor.sh snapshot /secure/path/before.contract
+sh scripts/dsh-doctor.sh snapshot /secure/path/candidate.contract
+sh scripts/dsh-doctor.sh diff /secure/path/before.contract /secure/path/candidate.contract
+```
+
+The snapshot records no paths, settings values, session content, credentials, model endpoints, or Docker data. `UNCHANGED` exits `0`; `REVIEW` exits `2`. Do not approve a promotion merely because HTTP health is available.
+
+### 4. Make the smallest reversible repair
 
 Choose a playbook from `references/remediation-playbooks.md`. Before an image or container replacement:
 
@@ -65,7 +77,7 @@ Choose a playbook from `references/remediation-playbooks.md`. Before an image or
 6. Verify HTTP health, state artifacts, model configuration presence, and one safe sandbox invocation.
 7. Keep the old container available until all checks pass.
 
-### 4. Verify the user-facing recovery
+### 5. Verify the user-facing recovery
 
 After the repair, confirm all of the following:
 
@@ -83,7 +95,8 @@ For an upstream discussion, publish only a minimal reproduction: DSH version, OS
 
 ## Repository Resources
 
-- `scripts/dsh-doctor.sh` — dependency-light, metadata-only preflight and runtime verifier.
+- `scripts/dsh-doctor.sh` — dependency-light, metadata-only verifier with versioned contracts, JSON output, protected snapshots, and redacted contract diffs.
+- `tests/test-dsh-doctor.sh` — synthetic, no-network regression suite for contract, diff, redaction, and failure semantics.
 - `references/remediation-playbooks.md` — symptom-to-repair guidance.
 - `references/state-contract.md` — upgrade invariants and redaction rules.
 - `examples/compose.state-safe.yaml` — safe Compose pattern; intentionally omits privileged execution and Docker Socket access.

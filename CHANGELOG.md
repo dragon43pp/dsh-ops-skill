@@ -1,24 +1,36 @@
 # Changelog
 
-All notable, public-safe changes to this project will be documented in this file. The format follows the spirit of [Keep a Changelog](https://keepachangelog.com/), with an emphasis on reproducibility, compatibility boundaries, and redaction.
+All notable changes to `dsh-ops-skill` are documented here. The project follows a lightweight, evidence-first release policy: a release records only behavior and documentation that have been reviewed for public redaction and reproducibility.
+
+## [Unreleased]
+
+### Added
+
+- Versioned, metadata-only key/value and JSON runtime contracts.
+- Non-reversible state-root fingerprints and root-selection origin reporting without path disclosure.
+- Protected private snapshots and redacted contract comparisons with explicit review exit code `2`.
+- An isolated POSIX-shell regression suite covering contract fields, JSON output, snapshot overwrite protection, diff semantics, redaction, and failure states.
+- Public CI coverage for shell syntax and the no-network regression suite.
+
+### Planned
+
+- Community-submitted, fully redacted compatibility reports.
 
 ## [0.1.0] — 2026-08-15
 
 ### Added
 
-- A portable, agent-readable SKILL.md for diagnosing DeepSeek Harness runtime-state failures.
-- A metadata-only dsh-doctor with read-only verification and state-contract modes.
-- State-contract guidance, symptom-to-recovery playbooks, and a minimum-permission Compose overlay.
-- English-first documentation, a Simplified Chinese guide, architecture notes, synthetic demonstration, and compatibility matrix.
-- A redaction-focused issue template, contribution guidance, MIT license, security policy, and public roadmap.
+- A portable `SKILL.md` for DSH and folder-based agent systems.
+- `scripts/dsh-doctor.sh`, a metadata-only verifier with `verify` and `contract` modes.
+- State-contract and symptom-remediation reference documentation.
+- A least-privilege Compose state-persistence overlay.
+- English-first documentation with a Simplified Chinese guide.
+- Architecture, synthetic demonstration, compatibility boundary, security policy, contribution guide, and redaction-focused issue template.
 
-### Security posture
+### Security
 
-- No default Docker Socket mount, privileged mode, SYS_ADMIN capability, public bind, or automatic state copy.
-- No published credentials, private endpoints, host information, session content, settings values, or raw inspection output.
+- The public project does not contain deployment credentials, private endpoints, session content, container IDs, internal paths, or provider configuration values.
+- Privileged mode, Docker Socket access, and `SYS_ADMIN` are not recommended or enabled by default.
 
-### Verification boundary
-
-- The project documents evidence and reversible recovery planning; it does not certify DSH versions, provider configuration, or privileged deployment safety.
-
+[Unreleased]: https://github.com/dragon43pp/dsh-ops-skill/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/dragon43pp/dsh-ops-skill/releases/tag/v0.1.0
