@@ -1,0 +1,17 @@
+# Local DSH state and secrets
+.dsh/
+.dsh-state/
+*.session
+*.session.jsonl
+*.session.jsonl.zstd
+*.log
+.env
+.env.*
+
+# Local tooling
+node_modules/
+coverage/
+dist/
+.DS_Store
+__pycache__/
+*.py[cod]
