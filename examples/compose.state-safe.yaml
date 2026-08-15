@@ -1,0 +1,52 @@
+# Merge this overlay with an existing DSH Compose service.
+
+# Set DSH_STATE_DIR and DSH_WORKSPACE to host paths or replace bind mounts with named volumes.
+
+# This file intentionally does not define an image, command, port, capability, or Docker Socket.
+
+services:
+
+  dsh:
+  
+    environment:
+    
+      HOME: /state
+      
+      DSH_HOME: /state
+      
+    working_dir: /workspace
+    
+    volumes:
+    
+      - ${DSH_STATE_DIR:?set DSH_STATE_DIR}:/state
+      
+      - ${DSH_WORKSPACE:?set DSH_WORKSPACE}:/workspace
+      
+    security_opt:
+    
+      - no-new-privileges:true
+      
+    cap_drop:
+    
+      - ALL
+      
+
+
+# Example use:
+
+# DSH_STATE_DIR=$PWD/.dsh-state DSH_WORKSPACE=$PWD \
+
+#   docker compose -f compose.yaml -f compose.state-safe.yaml config
+
+
+
+
+
+
+
+
+
+
+
+
+
