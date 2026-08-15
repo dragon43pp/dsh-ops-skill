@@ -23,7 +23,7 @@ This skill turns that failure mode into a repeatable workflow:
 ## Quick Start
 
 ```sh
-git clone https://github.com/<YOUR_GITHUB_HANDLE>/dsh-ops-skill.git
+git clone https://github.com/dragon43pp/dsh-ops-skill.git
 cd dsh-ops-skill
 sh scripts/dsh-doctor.sh verify
 ```
